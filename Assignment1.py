@@ -47,12 +47,34 @@ class MultiLayerPerceptron():
             self.layer_outputs.append(activation)
         #print(self.layer_outputs[-1][-1][-1])
 
+    def back_prop(self, input_data, true_label):
+        dL_dA = self.layer_outputs[-1] - true_label
+        for i in range(len(self.layer_sizes) - 2, -1, -1):
+            dA_dZ = self.relu_d(self.layer_outputs[i]) if i < len(self.layer_sizes) - 2 else 1
+            dZ_dW = input_data if i == 0 else self.layer_outputs[i-1]
+            dL_dW = np.dot(dZ_dW.T, dL_dA * dA_dZ)
+            dL_dB = np.sum(dL_dA * dA_dZ, axis=0)
+            MultiLayerPerceptron.gradients[f'w_{i+1}'] = dL_dW
+            MultiLayerPerceptron.gradients[f'b_{i+1}'] = dL_dB
+            if i > 0:
+                dL_dA = np.dot(dL_dA * dA_dZ, MultiLayerPerceptron.parameters[f'w_{i+1}'].T)
 
 
 (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
 total_class=max(train_labels)
 
+#change trainlabel=2 to oneHot=[0 0 1 0 0 0 0 0 0 0]
+train_labels_one_hot = np.eye(10)[train_labels]
+# test_labels_one_hot = np.eye(10)[test_labels]
+
+# print(train_labels.ndim)
+# y_train_one_hot = np.eye(10)[train_labels]
+# print(train_labels[0])
+# print(y_train_one_hot[0])
+
+
 layer_sizes = [train_images.shape[1],128, 128,128,total_class]  # Input, hidden1, hidden2,hidden3 output
 
-mlp = MultiLayerPerceptron(train_images, train_labels, layer_sizes)
+mlp = MultiLayerPerceptron(train_images, train_labels_one_hot, layer_sizes)
 mlp.feed_forwards(train_images)
+mlp.back_prop(train_images,train_labels_one_hot)
