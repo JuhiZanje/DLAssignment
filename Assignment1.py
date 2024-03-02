@@ -107,11 +107,22 @@ class MultiLayerPerceptron():
             if i == 0 or (i + 1) % 10 == 0:
                 print(f'EPOCH NO: {i + 1}')
 
-    def momentum_based_gradient_descent(self, epochs=50, batch_size=32, learning_rate=0.01, momentum=0.9):
-        #TEST LOSS: 2.3026 ACCURACY: 18.3000
+    def momentum_based_gradient_descent(self, epochs=1000, batch_size=32, learning_rate=0.01, momentum=0.9):
+        '''
+        Epoch 1, Loss: 2.302585074105683
+        Epoch 10, Loss: 2.302584993856886
+        Epoch 20, Loss: 2.302584815962538
+        Epoch 30, Loss: 2.3025846039658298
+        Epoch 40, Loss: 2.3025843799544137
+        Epoch 970, Loss: 2.302530143997252
+        Epoch 980, Loss: 2.302528239076171
+        Epoch 990, Loss: 2.3025262448018267
+        Epoch 1000, Loss: 2.302524155451391
+        TEST LOSS: 2.3025 ACCURACY: 18.1900
+        '''
         no_of_batches = self.no_of_samples // batch_size
 
-        # Initialize velocities for weights and biases
+        #Init velocities for weights and biases
         velocities = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
         velocities.update({f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)})      
 
@@ -121,13 +132,13 @@ class MultiLayerPerceptron():
             self.back_prop(self.train_data, self.train_labels)
 
             for k in range(len(self.layer_sizes) - 1):
-                # Update velocities with momentum
-                velocities[f'w_{k+1}'] = momentum * velocities[f'w_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'w_{k+1}'])
-                velocities[f'b_{k+1}'] = momentum * velocities[f'b_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'b_{k+1}'])
+                #updating velocities with given momentum
+                velocities[f'w_{k+1}'] = momentum * velocities[f'w_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'w_{k+1}']/self.no_of_samples)
+                velocities[f'b_{k+1}'] = momentum * velocities[f'b_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'b_{k+1}']/self.no_of_samples)
 
-                # Update parameters with momentum
-                MultiLayerPerceptron.parameters[f'w_{k+1}'] -= velocities[f'w_{k+1}']/self.no_of_samples
-                MultiLayerPerceptron.parameters[f'b_{k+1}'] -= velocities[f'b_{k+1}']/self.no_of_samples
+                #lastly update your params
+                MultiLayerPerceptron.parameters[f'w_{k+1}'] -= velocities[f'w_{k+1}']
+                MultiLayerPerceptron.parameters[f'b_{k+1}'] -= velocities[f'b_{k+1}']
 
             if i == 0 or (i + 1) % 10 == 0:
                 loss = self.cross_entropy_loss(self.layer_outputs[-1], self.train_labels)
@@ -168,6 +179,64 @@ class MultiLayerPerceptron():
             if i == 0 or (i + 1) % 10 == 0:                
                 print(f"Epoch {i+1}, Loss: {loss}")
 
+    def nesterov_accelerated_gradient_descent(self, epochs=50, batch_size=32, learning_rate=0.01, momentum=0.9):
+        '''
+        Epoch 1, Loss: 1.7769436213615732
+        Epoch 10, Loss: 0.3184254127633851
+        Epoch 20, Loss: 0.22170895638633642
+        Epoch 30, Loss: 0.1470918478562384
+        Epoch 40, Loss: 0.07939365190633518
+        Epoch 50, Loss: 0.06126664392295664
+        TEST LOSS: 0.5234 ACCURACY: 86.4800
+        '''
+        # batch_size=self.no_of_samples
+        no_of_batches = self.no_of_samples // batch_size
+
+        # Initialize velocities for weights and biases
+        velocities = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+        velocities.update({f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)})      
+
+        for i in range(epochs):
+            for j in range(no_of_batches):
+                start = j * batch_size
+                end = (j + 1) * batch_size
+                Y_train = self.train_labels[start:end]
+                X_train = self.train_data[start:end]
+
+                '''
+                storinf old weights in self.parameters[f'w_{k+1}_orig']
+                so that i can use it later and 
+                updating self.parameters[f'w_{k+1}'] so that same feed forward function can be used.                
+                '''
+                for k in range(len(self.layer_sizes) - 1):
+                    self.parameters[f'w_{k+1}_orig']=self.parameters[f'w_{k+1}']
+                    self.parameters[f'w_{k+1}'] = self.parameters[f'w_{k+1}'] - momentum * velocities[f'w_{k+1}']
+                    self.parameters[f'b_{k+1}_orig']=self.parameters[f'b_{k+1}']
+                    self.parameters[f'b_{k+1}'] = self.parameters[f'b_{k+1}'] - momentum * velocities[f'b_{k+1}']
+                
+                #feed forward and backprop is applied after changing weights and biases
+                self.feed_forwards(X_train)
+                self.back_prop(X_train, Y_train)
+
+                '''
+                here 1st we will set original weights to self.parameters[f'w_{k+1}']
+                and then update weigths and biases.
+                '''
+                for k in range(len(self.layer_sizes) - 1):
+                    velocities[f'w_{k+1}'] = momentum * velocities[f'w_{k+1}'] + learning_rate * (self.gradients[f'w_{k+1}'] / batch_size)
+                    velocities[f'b_{k+1}'] = momentum * velocities[f'b_{k+1}'] + learning_rate * (self.gradients[f'b_{k+1}'] / batch_size)
+
+                    self.parameters[f'w_{k+1}']=self.parameters[f'w_{k+1}_orig']
+                    self.parameters[f'w_{k+1}'] -= velocities[f'w_{k+1}']
+                    self.parameters[f'b_{k+1}']=self.parameters[f'b_{k+1}_orig']
+                    self.parameters[f'b_{k+1}'] -= velocities[f'b_{k+1}']
+
+                loss = self.cross_entropy_loss(self.layer_outputs[-1], Y_train)
+
+            if i == 0 or (i + 1) % 10 == 0:
+                # loss = self.cross_entropy_loss(self.layer_outputs[-1], self.train_labels)
+                print(f"Epoch {i+1}, Loss: {loss}")
+
     def test(self, x, y):
         self.feed_forwards(x)
         loss = self.cross_entropy_loss(self.layer_outputs[-1], y)
@@ -178,7 +247,7 @@ class MultiLayerPerceptron():
         return -np.sum(actual * np.log(pred + 1e-9)) / len(pred)
     
     def accuracy(self, pred, truth):
-        return (np.argmax(truth, axis=1) == np.argmax(pred, axis=1)).mean()
+            return (np.argmax(truth, axis=1) == np.argmax(pred, axis=1)).mean()
 
 #Load dataset
 (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
@@ -202,5 +271,5 @@ layer_sizes = [train_images.shape[1],128, 128,128,10]  # Input, hidden1, hidden2
 #init , train and test our model
 mlp = MultiLayerPerceptron(train_images, train_labels_one_hot, layer_sizes)
 # mlp.train()
-mlp.momentum_based_gradient_descent_mini_batch()
+mlp.nesterov_accelerated_gradient_descent()
 mlp.test(test_images, test_labels_one_hot)
