@@ -107,6 +107,67 @@ class MultiLayerPerceptron():
             if i == 0 or (i + 1) % 10 == 0:
                 print(f'EPOCH NO: {i + 1}')
 
+    def momentum_based_gradient_descent(self, epochs=50, batch_size=32, learning_rate=0.01, momentum=0.9):
+        #TEST LOSS: 2.3026 ACCURACY: 18.3000
+        no_of_batches = self.no_of_samples // batch_size
+
+        # Initialize velocities for weights and biases
+        velocities = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+        velocities.update({f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)})      
+
+        for i in range(epochs):
+
+            self.feed_forwards(self.train_data)
+            self.back_prop(self.train_data, self.train_labels)
+
+            for k in range(len(self.layer_sizes) - 1):
+                # Update velocities with momentum
+                velocities[f'w_{k+1}'] = momentum * velocities[f'w_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'w_{k+1}'])
+                velocities[f'b_{k+1}'] = momentum * velocities[f'b_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'b_{k+1}'])
+
+                # Update parameters with momentum
+                MultiLayerPerceptron.parameters[f'w_{k+1}'] -= velocities[f'w_{k+1}']/self.no_of_samples
+                MultiLayerPerceptron.parameters[f'b_{k+1}'] -= velocities[f'b_{k+1}']/self.no_of_samples
+
+            if i == 0 or (i + 1) % 10 == 0:
+                loss = self.cross_entropy_loss(self.layer_outputs[-1], self.train_labels)
+                print(f"Epoch {i+1}, Loss: {loss}")
+
+    def momentum_based_gradient_descent_mini_batch(self, epochs=50, batch_size=32, learning_rate=0.01, momentum=0.9):
+        #TEST LOSS: 0.5002 ACCURACY: 87.0900
+        no_of_batches = self.no_of_samples // batch_size
+
+        # Initialize velocities for weights and biases
+        velocities = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+        velocities.update({f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)})      
+
+        for i in range(epochs):
+            for j in range(no_of_batches):
+                start = j * batch_size
+                end = (j + 1) * batch_size
+                Y_train = self.train_labels[start:end]
+                X_train = self.train_data[start:end]
+
+                self.feed_forwards(X_train)
+                self.back_prop(X_train, Y_train)
+
+            # self.feed_forwards(self.train_data)
+            # self.back_prop(self.train_data, self.train_labels)
+
+                for k in range(len(self.layer_sizes) - 1):
+                    # Update velocities with momentum
+                    velocities[f'w_{k+1}'] = momentum * velocities[f'w_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'w_{k+1}'])
+                    velocities[f'b_{k+1}'] = momentum * velocities[f'b_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'b_{k+1}'])
+
+                    # Update parameters with momentum
+                    MultiLayerPerceptron.parameters[f'w_{k+1}'] -= velocities[f'w_{k+1}']/batch_size
+                    MultiLayerPerceptron.parameters[f'b_{k+1}'] -= velocities[f'b_{k+1}']/batch_size
+
+                    loss = self.cross_entropy_loss(self.layer_outputs[-1], Y_train)
+
+            if i == 0 or (i + 1) % 10 == 0:                
+                print(f"Epoch {i+1}, Loss: {loss}")
+
     def test(self, x, y):
         self.feed_forwards(x)
         loss = self.cross_entropy_loss(self.layer_outputs[-1], y)
@@ -140,5 +201,6 @@ layer_sizes = [train_images.shape[1],128, 128,128,10]  # Input, hidden1, hidden2
 
 #init , train and test our model
 mlp = MultiLayerPerceptron(train_images, train_labels_one_hot, layer_sizes)
-mlp.train()
+# mlp.train()
+mlp.momentum_based_gradient_descent_mini_batch()
 mlp.test(test_images, test_labels_one_hot)
