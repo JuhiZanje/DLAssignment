@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from keras.datasets import fashion_mnist
 
 class MultiLayerPerceptron():
@@ -62,8 +63,9 @@ class MultiLayerPerceptron():
             if i > 0:
                 dL_dA = np.dot(dL_dA * dA_dZ, MultiLayerPerceptron.parameters[f'w_{i+1}'].T)
 
+    # NO need 
     def batch_gradient_descent(self, epochs=1000, batch_size=32, learning_rate=0.01):
-        batch_size=self.no_of_samples
+        # batch_size=self.no_of_samples
         no_of_batches = self.no_of_samples // batch_size
 
         for i in range(epochs):
@@ -86,7 +88,7 @@ class MultiLayerPerceptron():
                 print(f'EPOCH NO: {i + 1} loss:{loss}')
 
     def train(self, epochs=50, batch_size=32, learning_rate=0.01):
-        #this is mini batch gradient descent 
+        #this is batch gradient descent or SGD
         #use this to train as this converges faster and gives better accuracy
         no_of_batches = self.no_of_samples // batch_size
 
@@ -107,52 +109,20 @@ class MultiLayerPerceptron():
             if i == 0 or (i + 1) % 10 == 0:
                 print(f'EPOCH NO: {i + 1}')
 
-    def momentum_based_gradient_descent(self, epochs=1000, batch_size=32, learning_rate=0.01, momentum=0.9):
-        '''
-        Epoch 1, Loss: 2.302585074105683
-        Epoch 10, Loss: 2.302584993856886
-        Epoch 20, Loss: 2.302584815962538
-        Epoch 30, Loss: 2.3025846039658298
-        Epoch 40, Loss: 2.3025843799544137
-        Epoch 970, Loss: 2.302530143997252
-        Epoch 980, Loss: 2.302528239076171
-        Epoch 990, Loss: 2.3025262448018267
-        Epoch 1000, Loss: 2.302524155451391
-        TEST LOSS: 2.3025 ACCURACY: 18.1900
-        '''
-        no_of_batches = self.no_of_samples // batch_size
-
-        #Init velocities for weights and biases
-        velocities = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
-        velocities.update({f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)})      
-
-        for i in range(epochs):
-
-            self.feed_forwards(self.train_data)
-            self.back_prop(self.train_data, self.train_labels)
-
-            for k in range(len(self.layer_sizes) - 1):
-                #updating velocities with given momentum
-                velocities[f'w_{k+1}'] = momentum * velocities[f'w_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'w_{k+1}']/self.no_of_samples)
-                velocities[f'b_{k+1}'] = momentum * velocities[f'b_{k+1}'] + learning_rate * (MultiLayerPerceptron.gradients[f'b_{k+1}']/self.no_of_samples)
-
-                #lastly update your params
-                MultiLayerPerceptron.parameters[f'w_{k+1}'] -= velocities[f'w_{k+1}']
-                MultiLayerPerceptron.parameters[f'b_{k+1}'] -= velocities[f'b_{k+1}']
-
-            if i == 0 or (i + 1) % 10 == 0:
-                loss = self.cross_entropy_loss(self.layer_outputs[-1], self.train_labels)
-                print(f"Epoch {i+1}, Loss: {loss}")
-
-    def momentum_based_gradient_descent_mini_batch(self, epochs=50, batch_size=32, learning_rate=0.01, momentum=0.9):
+    def momentum_based_gradient_descent(self, epochs=5, batch_size=32, learning_rate=0.01, momentum=0.9):
+        start_time=time.time()
         #TEST LOSS: 0.5002 ACCURACY: 87.0900
+        # TEST LOSS: 1.1413 ACCURACY: 56.3500 for epoch=5
+        #time=83.27040839195251s
         no_of_batches = self.no_of_samples // batch_size
+        # print("no_of_batches=",no_of_batches)
 
         # Initialize velocities for weights and biases
         velocities = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
         velocities.update({f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)})      
 
         for i in range(epochs):
+            print(i)
             for j in range(no_of_batches):
                 start = j * batch_size
                 end = (j + 1) * batch_size
@@ -176,8 +146,9 @@ class MultiLayerPerceptron():
 
                     loss = self.cross_entropy_loss(self.layer_outputs[-1], Y_train)
 
-            if i == 0 or (i + 1) % 10 == 0:                
-                print(f"Epoch {i+1}, Loss: {loss}")
+            # if i == 0 or (i + 1) % 10 == 0:                
+            #     print(f"Epoch {i+1}, Loss: {loss}")
+        print(time.time()-start_time)
 
     def nesterov_accelerated_gradient_descent(self, epochs=50, batch_size=32, learning_rate=0.01, momentum=0.9):
         '''
@@ -237,6 +208,142 @@ class MultiLayerPerceptron():
                 # loss = self.cross_entropy_loss(self.layer_outputs[-1], self.train_labels)
                 print(f"Epoch {i+1}, Loss: {loss}")
 
+    def rmsprop_gradient_descent(self, epochs=500, batch_size=32, learning_rate=0.01, beta=0.9, epsilon=1e-4):
+        batch_size = self.no_of_samples
+        no_of_batches = self.no_of_samples // batch_size
+
+        # Initialize square gradients for weights and biases
+        squared_gradients = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+        squared_gradients.update({f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)})
+
+        for i in range(epochs):
+            for j in range(no_of_batches):
+                start = j * batch_size
+                end = (j + 1) * batch_size
+                Y_train = self.train_labels[start:end]
+                X_train = self.train_data[start:end]
+
+                self.feed_forwards(X_train)
+                self.back_prop(X_train, Y_train)
+
+                for k in range(len(self.layer_sizes) - 1):
+                    # Calculate the squared gradients
+                    squared_gradients[f'w_{k+1}'] = beta * squared_gradients[f'w_{k+1}'] + (1 - beta) * ((self.gradients[f'w_{k+1}']) ** 2)
+                    squared_gradients[f'b_{k+1}'] = beta * squared_gradients[f'b_{k+1}'] + (1 - beta) * ((self.gradients[f'b_{k+1}']) ** 2)
+
+                    # Update parameters using RMSprop
+                    MultiLayerPerceptron.parameters[f'w_{k+1}'] -= (learning_rate * self.gradients[f'w_{k+1}'] / (np.sqrt(squared_gradients[f'w_{k+1}']) + epsilon))/batch_size
+                    MultiLayerPerceptron.parameters[f'b_{k+1}'] -= (learning_rate * self.gradients[f'b_{k+1}'] / (np.sqrt(squared_gradients[f'b_{k+1}']) + epsilon))/batch_size
+
+                loss = self.cross_entropy_loss(self.layer_outputs[-1], Y_train)
+
+            if i == 0 or (i + 1) % 10 == 0:
+                # loss = self.cross_entropy_loss(self.layer_outputs[-1], Y_train)
+                print(f'EPOCH NO: {i + 1} Loss:{loss}')
+
+    def adam_optimizer(self, epochs=500, batch_size=32, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
+        # TEST LOSS: 0.7283 ACCURACY: 81.1500
+        batch_size = self.no_of_samples
+        no_of_batches = self.no_of_samples // batch_size
+
+        # Initialize first and second moments for weights and biases
+        m = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+        m.update({f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)})
+
+        v = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+        v.update({f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)})
+
+        # Initialize time step
+        t = 0
+
+        for i in range(epochs):
+            for j in range(no_of_batches):
+                start = j * batch_size
+                end = (j + 1) * batch_size
+                Y_train = self.train_labels[start:end]
+                X_train = self.train_data[start:end]
+
+                t += 1
+
+                self.feed_forwards(X_train)
+                self.back_prop(X_train, Y_train)
+
+                for k in range(len(self.layer_sizes) - 1):
+                    # Update first moment
+                    m[f'w_{k+1}'] = beta1 * m[f'w_{k+1}'] + (1 - beta1) * self.gradients[f'w_{k+1}']
+                    m[f'b_{k+1}'] = beta1 * m[f'b_{k+1}'] + (1 - beta1) * self.gradients[f'b_{k+1}']
+
+                    # Update second moment
+                    v[f'w_{k+1}'] = beta2 * v[f'w_{k+1}'] + (1 - beta2) * (self.gradients[f'w_{k+1}'] ** 2)
+                    v[f'b_{k+1}'] = beta2 * v[f'b_{k+1}'] + (1 - beta2) * (self.gradients[f'b_{k+1}'] ** 2)
+
+                    # Bias correction terms
+                    m_hat_w = m[f'w_{k+1}'] / (1 - beta1 ** t)
+                    m_hat_b = m[f'b_{k+1}'] / (1 - beta1 ** t)
+                    v_hat_w = v[f'w_{k+1}'] / (1 - beta2 ** t)
+                    v_hat_b = v[f'b_{k+1}'] / (1 - beta2 ** t)
+
+                    # Update parameters using Adam
+                    MultiLayerPerceptron.parameters[f'w_{k+1}'] -= (learning_rate * (m_hat_w / (np.sqrt(v_hat_w) + epsilon)))
+                    MultiLayerPerceptron.parameters[f'b_{k+1}'] -= (learning_rate * (m_hat_b / (np.sqrt(v_hat_b) + epsilon)))
+                loss = self.cross_entropy_loss(self.layer_outputs[-1], Y_train)
+
+            if i == 0 or (i + 1) % 10 == 0:
+                print(f'EPOCH NO: {i + 1} loss: {loss}')
+
+    def nadam_optimizer(self, epochs=500, batch_size=32, learning_rate=0.01, beta1=0.9, beta2=0.999, epsilon=1e-8):
+        no_of_batches = self.no_of_samples // batch_size
+
+        # Initialize velocities and squared gradients for weights and biases
+        m_w = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+        v_w = {f'w_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+        m_b = {f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+        v_b = {f'b_{k+1}': 0 for k in range(len(self.layer_sizes) - 1)}
+
+        for i in range(epochs):
+            for j in range(no_of_batches):
+                start = j * batch_size
+                end = (j + 1) * batch_size
+                Y_train = self.train_labels[start:end]
+                X_train = self.train_data[start:end]
+
+                # Store original weights for later use
+                for k in range(len(self.layer_sizes) - 1):
+                    self.parameters[f'w_{k+1}_orig'] = self.parameters[f'w_{k+1}']
+                    self.parameters[f'b_{k+1}_orig'] = self.parameters[f'b_{k+1}']
+
+                    # Update weights and biases using Nesterov accelerated gradient
+                    self.parameters[f'w_{k+1}'] = self.parameters[f'w_{k+1}'] - beta1 * m_w[f'w_{k+1}']
+                    self.parameters[f'b_{k+1}'] = self.parameters[f'b_{k+1}'] - beta1 * m_b[f'b_{k+1}']
+
+                # Feed forward and backpropagation
+                self.feed_forwards(X_train)
+                self.back_prop(X_train, Y_train)
+
+                # Update velocities and squared gradients
+                for k in range(len(self.layer_sizes) - 1):
+                    m_w[f'w_{k+1}'] = beta1 * m_w[f'w_{k+1}'] + (1 - beta1) * self.gradients[f'w_{k+1}']
+                    v_w[f'w_{k+1}'] = beta2 * v_w[f'w_{k+1}'] + (1 - beta2) * np.square(self.gradients[f'w_{k+1}'])
+
+                    m_b[f'b_{k+1}'] = beta1 * m_b[f'b_{k+1}'] + (1 - beta1) * self.gradients[f'b_{k+1}']
+                    v_b[f'b_{k+1}'] = beta2 * v_b[f'b_{k+1}'] + (1 - beta2) * np.square(self.gradients[f'b_{k+1}'])
+
+                # Bias correction
+                m_w_hat = m_w[f'w_{k+1}'] / (1 - beta1**(i+1))
+                v_w_hat = v_w[f'w_{k+1}'] / (1 - beta2**(i+1))
+
+                m_b_hat = m_b[f'b_{k+1}'] / (1 - beta1**(i+1))
+                v_b_hat = v_b[f'b_{k+1}'] / (1 - beta2**(i+1))
+
+                # Update weights and biases
+                self.parameters[f'w_{k+1}'] = self.parameters[f'w_{k+1}_orig'] - learning_rate * (m_w_hat / (np.sqrt(v_w_hat) + epsilon))
+                self.parameters[f'b_{k+1}'] = self.parameters[f'b_{k+1}_orig'] - learning_rate * (m_b_hat / (np.sqrt(v_b_hat) + epsilon))
+
+                loss = self.cross_entropy_loss(self.layer_outputs[-1], Y_train)
+
+            if i == 0 or (i + 1) % 10 == 0:
+                print(f"Epoch {i+1}, Loss: {loss}")
+
     def test(self, x, y):
         self.feed_forwards(x)
         loss = self.cross_entropy_loss(self.layer_outputs[-1], y)
@@ -271,5 +378,5 @@ layer_sizes = [train_images.shape[1],128, 128,128,10]  # Input, hidden1, hidden2
 #init , train and test our model
 mlp = MultiLayerPerceptron(train_images, train_labels_one_hot, layer_sizes)
 # mlp.train()
-mlp.nesterov_accelerated_gradient_descent()
+mlp.momentum_based_gradient_descent()
 mlp.test(test_images, test_labels_one_hot)
