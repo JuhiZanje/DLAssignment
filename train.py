@@ -61,6 +61,7 @@ class MultiLayerPerceptron():
       self.A = {}
       self.H = {}
 
+#function to initialize Weights either using random initializer or Xavior
   def init_weights(self):
     if self.initialization=="random":
       # print("init random")
@@ -78,59 +79,66 @@ class MultiLayerPerceptron():
         self.parameters[f'w_{i+1}'] = np.random.randn(self.layer_sizes[i], self.layer_sizes[i + 1]) * x_fact
         self.parameters[f'b_{i+1}'] = np.random.randn(1,self.layer_sizes[i+1]) * x_fact
 
+#softmax fynction
   def softmax(self, x):
     max_x = np.max(x, axis=1, keepdims=True)
     exps = np.exp(x - max_x)
     return exps / np.sum(exps, axis=1, keepdims=True)
 
+#derivation of softmax function
   def softmax_d(self,x):
     softmax_x = self.softmax(x)
     return softmax_x*(1-softmax_x)
 
-  def feed_forwards(self, input_data):
+#feed forward Function
+  def feed_forwards(self, input_data):      
+    for i in range(len(self.layer_sizes) - 1): 
+        # if(i==0) :#input is our images
+        if(i==0):
+          preactivation=np.dot(input_data , self.parameters[f'w_{i+1}']) + self.parameters[f'b_{i+1}']
+        else:
+          preactivation = np.dot(self.H[i], self.parameters[f'w_{i+1}']) + self.parameters[f'b_{i+1}']
+        self.A[i+1]=preactivation
 
-      # self.H[0]=input_data
-      for i in range(len(self.layer_sizes) - 1): # i -> 0-3
-          # if(i==0) :#input is our images
-          if(i==0):
-            preactivation=np.dot(input_data , self.parameters[f'w_{i+1}']) + self.parameters[f'b_{i+1}']
-          else:
-            preactivation = np.dot(self.H[i], self.parameters[f'w_{i+1}']) + self.parameters[f'b_{i+1}']
-          self.A[i+1]=preactivation
+        if i < len(self.layer_sizes) - 2 : 
+          #if we havent reached the last layer
+          #give preactivation output of previous layer to the acivation function                        
+            activation = self.loss_act_func.activation_func(self.A[i+1],"real")
+        else :
+            #if we reached last layer then use softmax as activation  
+            activation=self.softmax(self.A[i+1])
+        self.H[i+1]=activation
 
-          if i < len(self.layer_sizes) - 2 : # i < 3
-              activation = self.loss_act_func.activation_func(self.A[i+1],"real")
-          else :
-              activation=self.softmax(self.A[i+1])
-          self.H[i+1]=activation
+    return self.H[len(self.layer_sizes)-1]
 
-      return self.H[len(self.layer_sizes)-1]
-
+#back propogation method
   def back_prop(self, input_data, true_label,pred_label):
-      # print("in back")
-      if ((self.loss_act_func).get_name()=="cross_entropy"):
-        # print("cross_entropy")
-        dL_dA = pred_label - true_label
-      elif ((self.loss_act_func).get_name()=="mean_squared_error"):
-        dL_dA = ((pred_label - true_label) * self.softmax_d(self.A[len(self.layer_sizes)-1])) / true_label.shape[0]
+    #check which loss function we are using and change dL-dA according to it 
+    if ((self.loss_act_func).get_name()=="cross_entropy"):
+      # print("cross_entropy")
+      dL_dA = pred_label - true_label
+    elif ((self.loss_act_func).get_name()=="mean_squared_error"):
+      dL_dA = ((pred_label - true_label) * self.softmax_d(self.A[len(self.layer_sizes)-1])) / true_label.shape[0]
 
-      for i in range(len(self.layer_sizes) - 1, 1, -1): # i->4 3 2
+    #implementing chain rule
+    for i in range(len(self.layer_sizes) - 1, 1, -1): # i->4 3 2
 
-          self.gradients[f'w_{i}']=np.dot(self.H[i-1].T, dL_dA)
-          self.gradients[f'b_{i}']=np.sum(dL_dA , axis=0,keepdims=True)
+        self.gradients[f'w_{i}']=np.dot(self.H[i-1].T, dL_dA)
+        self.gradients[f'b_{i}']=np.sum(dL_dA , axis=0,keepdims=True)
 
-          dL_dH=np.dot(dL_dA, (self.parameters[f'w_{i}']).T )
-          dL_dA = dL_dH * self.loss_act_func.activation_func(self.A[i-1],"derivative")
+        dL_dH=np.dot(dL_dA, (self.parameters[f'w_{i}']).T )
+        dL_dA = dL_dH * self.loss_act_func.activation_func(self.A[i-1],"derivative")
 
-      self.gradients[f'w_{1}']=np.dot(input_data.T, dL_dA )
-      self.gradients[f'b_{1}']=np.sum(dL_dA , axis=0,keepdims=True)
+    self.gradients[f'w_{1}']=np.dot(input_data.T, dL_dA )
+    self.gradients[f'b_{1}']=np.sum(dL_dA , axis=0,keepdims=True)
 
+#All optimizers are implemented here
   def optimizer_func(self):
 
       if(self.optimizer=="sgd"):
-          #this is batch gradient descent or SGD
-          # no_of_batches = self.no_of_samples // batch_size
+          #Implementing SGD
           for i in range(self.epochs):
+              #j loop will go for all the batches created
               for j in range(0,self.no_of_samples,self.batch_size):
                   start = j
                   end = start + self.batch_size
@@ -138,9 +146,9 @@ class MultiLayerPerceptron():
                   X_train_images = self.train_data[start:end]
 
                   pred_labels=self.feed_forwards(X_train_images)
-                  # pred_labels=self.fprg(X_train_images)
                   self.back_prop(X_train_images, Y_train_labels,pred_labels)
 
+                  #update weights and biases
                   for k in range(len(self.layer_sizes) - 1):# 0->3
                       self.gradients[f'w_{k+1}']=self.gradients[f'w_{k+1}']/self.batch_size
                       self.gradients[f'b_{k+1}']=self.gradients[f'b_{k+1}']/self.batch_size
@@ -149,6 +157,7 @@ class MultiLayerPerceptron():
                       self.parameters[f'w_{k+1}'] -= self.learning_rate * (self.gradients[f'w_{k+1}'] )
                       self.parameters[f'b_{k+1}'] -= self.learning_rate * (self.gradients[f'b_{k+1}'] )
 
+              #finding training/validation loss/accuracy
               pred_labels = self.feed_forwards(self.train_data)
               tra_acc = self.accuracy(pred_labels,self.train_labels)
               tra_loss = self.loss_act_func.loss_functions(pred_labels, self.train_labels)
@@ -156,16 +165,14 @@ class MultiLayerPerceptron():
               pred_labels = self.feed_forwards(self.val_data)
               val_acc = self.accuracy(pred_labels,self.val_labels)
               val_loss = self.loss_act_func.loss_functions(pred_labels, self.val_labels)
+
               if(self.printFlag=="print"):
                 print(f"Epoch {i+1}, Training Loss: {tra_loss} , Training Accuracy: {tra_acc} , Validation Loss: {val_loss} Validation Accuracy: {val_acc}")
               else:
                 wandb.log({"Epoch": i+1, "Training_Loss": tra_loss, "Training_Accuracy": tra_acc,"Validation_Loss": val_loss,"Validation_Accuracy": val_acc})
 
       if(self.optimizer=="momentum"):
-        '''
-        Epoch 10, Loss: 0.6812374987038496 Acc: 75.0
-        TEST LOSS: 0.7075 ACCURACY: 72.0900
-        '''
+        #init velocities for w and b to zeros        
         velocities={}
         for i in range(len(self.layer_sizes) - 1):
           velocities[f'w_{i+1}'] = np.zeros((self.layer_sizes[i], self.layer_sizes[i+1]))
@@ -180,7 +187,7 @@ class MultiLayerPerceptron():
 
             pred_labels=self.feed_forwards(X_train_images)
             self.back_prop(X_train_images, Y_train_labels,pred_labels)
-
+            #update weights and bias as per momentum updation rule
             for k in range(len(self.layer_sizes) - 1):
                 self.gradients[f'w_{k+1}']=self.gradients[f'w_{k+1}']/self.batch_size
                 self.gradients[f'b_{k+1}']=self.gradients[f'b_{k+1}']/self.batch_size
@@ -193,7 +200,8 @@ class MultiLayerPerceptron():
                 # Update parameters with momentum
                 self.parameters[f'w_{k+1}'] -= velocities[f'w_{k+1}']
                 self.parameters[f'b_{k+1}'] -= velocities[f'b_{k+1}']
-
+          
+          #train/validation data loss/accuracy
           pred_labels = self.feed_forwards(self.train_data)
           tra_acc = self.accuracy(pred_labels,self.train_labels)
           tra_loss = self.loss_act_func.loss_functions(pred_labels, self.train_labels)
@@ -459,9 +467,11 @@ class MultiLayerPerceptron():
           else:
             wandb.log({"Epoch": i+1, "Training_Loss": tra_loss, "Training_Accuracy": tra_acc,"Validation_Loss": val_loss,"Validation_Accuracy": val_acc})
 
+#calculates the accuracy
   def accuracy(self, pred, truth):
     return ((np.argmax(truth, axis=1) == np.argmax(pred, axis=1)).mean())*100
 
+# calculated loss and accuracy for test data
   def test(self, x, y):
     pred_labels=self.feed_forwards(x)
     loss = self.loss_act_func.loss_functions(pred_labels, y)
@@ -470,10 +480,12 @@ class MultiLayerPerceptron():
 
 
 class LossActFunc():
+    #this class has methods for loss and activation functions
     def __init__(self, lossFun = "cross_entropy",actFun="sigmoid"):
         self.loss_func = lossFun
         self.act_fun = actFun
 
+    #contains both the loss functions
     def loss_functions(self,pred, actual):
       if (self.loss_func=="cross_entropy"):
         return -np.sum(actual * np.log(pred + 1e-9)) / len(pred)
@@ -483,6 +495,7 @@ class LossActFunc():
         meanSquErr=squErr/ len(pred)
         return  meanSquErr
 
+    #this  methid returns the name of the loss function called
     def get_name(self):
       if (self.loss_func=="cross_entropy"):
         return "cross_entropy"
@@ -490,12 +503,12 @@ class LossActFunc():
       elif (self.loss_func == "mean_squared_error"):
         return "mean_squared_error"
 
-
+    #contains the activation functions and their derivatives
     def activation_func(self, x,real_der):
-
+      #real_der=real --> want activation function
+      #real_der=der --> want derivation of activation function
       if(self.act_fun == "sigmoid"):
         # sigmoid function
-        # print("in sigmoid",x)
         if(real_der=="real"):
             return 1.0 / (1.0 + np.exp(-x))
         else:
@@ -518,11 +531,7 @@ class LossActFunc():
             return (x > 0) * 1           
 
 
-# import 
-
-# import warnings
-# warnings.filterwarnings("ignore")
-wandb.login(key='')
+wandb.login(key='494428cc53b5c21da594f4fc75035d136c63a93c')
 # take arguments passed while running this file
 arguments = argparse.ArgumentParser()
 arguments.add_argument('-wp' , '--wandb_project',type=str,default="CS6910 - Assignment 1")
@@ -560,6 +569,7 @@ test_images = test_images.reshape(test_images.shape[0], -1) / 255.0
 train_labels_one_hot = np.eye(10)[train_labels]
 test_labels_one_hot = np.eye(10)[test_labels]
 # split train-data into train and validation data
+
 train_images, val_images, train_labels_one_hot, val_labels_one_hot = train_test_split(train_images, train_labels_one_hot, test_size=0.1, random_state=42)
 
 # Now we will set params and will train and test data
@@ -587,14 +597,15 @@ epsilon=ter_args.epsilon
 weight_decay=ter_args.weight_decay
 batch_size=ter_args.batch_size
 optimizer=ter_args.optimizer # sgd , momentum ,nag , rmsprop , adam , nadam
-printFlag="wandb"
+printFlag="wandb" #as we want to log to wandb
 
-# Epoch 50, Training Loss: 0.09106023231455047 , Training Accuracy: 96.66481481481482 , Validation Loss: 0.5375967565066632 Validation Accuracy: 88.78333333333333
-# TEST LOSS: 0.5613 ACCURACY: 88.5200
-
+#ctreate object of MultiLayerPerceptron class 
 mlp = MultiLayerPerceptron(train_images, train_labels_one_hot,val_images,val_labels_one_hot, layer_sizes,initialization,loss_act_func,batch_size,epochs,learning_rate,weight_decay,optimizer,momentum,beta,beta1,beta2,epsilon,printFlag)
+#init wieghts with giveninitialization
 mlp.init_weights()
+#call given optimizer function to train 
 mlp.optimizer_func()
+#print Test loss and accuracy
 mlp.test(test_images, test_labels_one_hot)
 
 wandb.finish()
