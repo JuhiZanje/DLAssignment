@@ -529,9 +529,16 @@ class LossActFunc():
             return np.maximum(0, x)
         else:
             return (x > 0) * 1           
+        
+      if(self.act_fun == "identity"):
+        if(real_der=="real"):
+            return x
+        else:
+            return 1           
 
 
-wandb.login(key='494428cc53b5c21da594f4fc75035d136c63a93c')
+
+# wandb.login(key='')
 # take arguments passed while running this file
 arguments = argparse.ArgumentParser()
 arguments.add_argument('-wp' , '--wandb_project',type=str,default="CS6910 - Assignment 1")
@@ -542,11 +549,11 @@ arguments.add_argument('-b', '--batch_size', type=int, default=32)
 arguments.add_argument('-l','--loss', type=str,help="cross_entropy,mean_squared_error", default="cross_entropy")
 arguments.add_argument('-o', '--optimizer',type=str,help="sgd, momentum, nag, rmsprop, adam, nadam", default = "nadam")
 arguments.add_argument('-lr', '--learning_rate',type=float, default=0.001)
-arguments.add_argument('-m', '--momentum',type=float, default=0.9)
-arguments.add_argument('-beta', '--beta', type=float, default=0.5)
-arguments.add_argument('-beta1', '--beta1',type=float, default=0.09)
-arguments.add_argument('-beta2', '--beta2',type=float, default=0.999)
-arguments.add_argument('-eps', '--epsilon', type=float, default=1e-8)
+arguments.add_argument('-m', '--momentum',type=float, help="for momentum and nag optimizers",default=0.9)
+arguments.add_argument('-beta', '--beta', type=float, help="for rmsprop optimizer",default=0.5)
+arguments.add_argument('-beta1', '--beta1',type=float,help="for adam and nadam optimizers", default=0.09)
+arguments.add_argument('-beta2', '--beta2',type=float,help="for adam and nadam optimizers", default=0.999)
+arguments.add_argument('-eps', '--epsilon', type=float,help="for optimizer", default=1e-8)
 arguments.add_argument('-w_d', '--weight_decay',type=float, default=0.0005)
 arguments.add_argument('-w_i', '--weight_init',  type=str, help="random , Xavier",default="Xavier")
 arguments.add_argument('-nhl', '--num_layers', type=int, default=4)
@@ -609,8 +616,4 @@ mlp.optimizer_func()
 mlp.test(test_images, test_labels_one_hot)
 
 wandb.finish()
-
-
-
-
 
