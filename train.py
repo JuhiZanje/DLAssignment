@@ -616,7 +616,3 @@ mlp.test(test_images, test_labels_one_hot)
 
 wandb.finish()
 
-
-
-
-
