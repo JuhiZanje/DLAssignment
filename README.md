@@ -26,7 +26,7 @@ After identifying the best configuration using tools like Weights & Biases (wand
 **train.py->**
 * Project Name (wandb_project) default set to 'CS6910 - Assignment 1'
 * Project name is space saperated thus when using it for commands you need to use it in **inverted comas (ie. in string format)**
-* when using Project name in command use as : **"CS6910 - Assignment 1"**
+* when using Project name in command use as : **"CS6910 - Assignment 1"** (with inverted commas)
 * Entity Name (wandb_entity) in project default set to 'Juhi_Zanje'
 * as given in the question description.
 
