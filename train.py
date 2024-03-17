@@ -537,7 +537,6 @@ class LossActFunc():
             return 1           
 
 
-
 # wandb.login(key='')
 # take arguments passed while running this file
 arguments = argparse.ArgumentParser()
