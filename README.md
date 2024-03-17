@@ -24,17 +24,20 @@ After identifying the best configuration using tools like Weights & Biases (wand
 
 ## GitHub Files to use
 **train.py->**
+* **python train.py** ---> command will run with all the default parameters values
 * Project Name (wandb_project) default set to 'CS6910 - Assignment 1'
 * Project name is space saperated thus when using it for commands you need to use it in **inverted comas (ie. in string format)**
 * when using Project name in command use as : **"CS6910 - Assignment 1"** (with inverted commas)
+* eg: **python train.py --wandb_entity Juhi_Zanje --wandb_project "CS6910 - Assignment 1"**
 * Or use the default setting
 * Entity Name (wandb_entity) in project default set to 'Juhi_Zanje'
 * as given in the question description.
 
+
 **Assignment_1_jupitor->**
 * This is a Jupitor file which contains all the Questions given in the assignment section wise.
 * To run this File you will have to run file from starting section , one by one.
-* When needed Will have to install some packages.
+* When needed Will have to install some packages.(installation code is also there)
 * By running this file you can get all the outputs I have shown in my Report.
 
 
