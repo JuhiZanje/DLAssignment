@@ -22,9 +22,11 @@ Validation_data - 6000
 During the hyperparameter optimization stage, 10% of the training dataset, consisting of around 6000 images and their corresponding labels, is set aside for validation for each hyperparameter configuration. The remaining 90%, approximately 54000 images, are used for training the model.
 After identifying the best configuration using tools like Weights & Biases (wandb) with either Random Search or Bayesian Optimization, the full training dataset is utilized to train the selected best model configuration. Subsequently, the test accuracy is computed, followed by the generation of a confusion matrix for evaluation purposes.
 
-## Files on Github to use
+## GitHub Files to use
 **train.py->**
 * Project Name (wandb_project) default set to 'CS6910 - Assignment 1'
+-->Project name is space saperated thus when using it for commands you need to use it in **inverted comas (ie. in string format)**
+--> when using Project name in command use as : **"CS6910 - Assignment 1"**
 * Entity Name (wandb_entity) in project default set to 'Juhi_Zanje'
 * as given in the question description.
 
@@ -36,28 +38,12 @@ After identifying the best configuration using tools like Weights & Biases (wand
 
 As the wandb project is made public wandb key is removed from the code.
 
-### String passed for selecting Function
-  
-  **Choices For Loss Function**
-  * 'mean_squared_error' : For Mean Square Error
-  * 'cross_entropy' : For Cross Entropy
-
-  **Choices For Optimization Function**
-  * 'sgd' : For Stochastic Gradient Descent
-  * 'momentum' : For Momentum Based Gradient Descent
-  * 'nag' : For Nesterov Accelerated Gradient Descent
-  * 'rmsprop' : For Rmsprop
-  * 'adam' : For Adam
-  * 'nadam' : For Nadam
-
-  **Choices For Activation Function**
-  * 'sigmoid' : For Sigmoid Function
-  * 'tanh' : For Tanh Function
-  * 'ReLU' : For ReLu Function
-  
-  **Choices For Weight Initilization** (String Passed For selecting Weight Initializer)
-  * 'random' 
-  * 'Xavier'
+### String Inputs for Function Selection
+You can select various options for different functions using specific strings:
+- **Loss Function**: 'mean_squared_error' or 'cross_entropy'
+- **Optimization Function**: 'sgd', 'momentum', 'nag', 'rmsprop', 'adam', or 'nadam'
+- **Activation Function**: 'sigmoid', 'tanh', 'ReLU' ,'identity'
+- **Weight Initialization**: 'random' or 'Xavier'
 
 
 ## Results:
