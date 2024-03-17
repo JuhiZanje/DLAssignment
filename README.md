@@ -23,12 +23,12 @@ During the hyperparameter optimization stage, 10% of the training dataset, consi
 After identifying the best configuration using tools like Weights & Biases (wandb) with either Random Search or Bayesian Optimization, the full training dataset is utilized to train the selected best model configuration. Subsequently, the test accuracy is computed, followed by the generation of a confusion matrix for evaluation purposes.
 
 ## Files on Github to use
-* train.py->
+**train.py->**
 * Project Name (wandb_project) default set to 'CS6910 - Assignment 1'
 * Entity Name (wandb_entity) in project default set to 'Juhi_Zanje'
 * as given in the question description.
 
-* Assignment_1_jupitor->
+**Assignment_1_jupitor->**
 * This is a Jupitor file which contains all the Questions given in the assignment section wise.
 * To run this File you will have to run file from starting section , one by one.
 * When needed Will have to install some packages.
