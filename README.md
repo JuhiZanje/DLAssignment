@@ -27,6 +27,7 @@ After identifying the best configuration using tools like Weights & Biases (wand
 * Project Name (wandb_project) default set to 'CS6910 - Assignment 1'
 * Project name is space saperated thus when using it for commands you need to use it in **inverted comas (ie. in string format)**
 * when using Project name in command use as : **"CS6910 - Assignment 1"** (with inverted commas)
+* Or use the default setting
 * Entity Name (wandb_entity) in project default set to 'Juhi_Zanje'
 * as given in the question description.
 
@@ -36,7 +37,6 @@ After identifying the best configuration using tools like Weights & Biases (wand
 * When needed Will have to install some packages.
 * By running this file you can get all the outputs I have shown in my Report.
 
-As the wandb project is made public wandb key is removed from the code.
 
 ### String Inputs for Function Selection
 You can select various options for different functions using specific strings:

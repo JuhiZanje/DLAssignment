@@ -537,7 +537,7 @@ class LossActFunc():
             return 1           
 
 
-# wandb.login(key='')
+wandb.login(key='494428cc53b5c21da594f4fc75035d136c63a93c')
 # take arguments passed while running this file
 arguments = argparse.ArgumentParser()
 arguments.add_argument('-wp' , '--wandb_project',type=str,default="CS6910 - Assignment 1")
